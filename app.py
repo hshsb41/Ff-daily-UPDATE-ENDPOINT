@@ -65,7 +65,7 @@ async def get_scraping_update():
     except Exception as e:
         return {"error": str(e)}
 
-@app.get("/update")
+@app.get("/")
 async def get_combined_update():
     
     region_urls = load_client_urls()
