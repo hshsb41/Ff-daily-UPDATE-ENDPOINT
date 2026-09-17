@@ -70,7 +70,6 @@ async def get_combined_update():
     region_urls = load_client_urls()
     api_task, web_task = await asyncio.gather(get_api_update(), get_scraping_update())
 
-    # Professional Premium JSON Data Dictionary
     response_data = {
         "status": "success",
         "SourceUpdate_info": api_task,
@@ -80,10 +79,9 @@ async def get_combined_update():
         "YouTube": "ckr unknown"
     }
 
-    # Pretty JSON string formatting (Indentation with 4 spaces)
     pretty_json = json.dumps(response_data, indent=4, ensure_ascii=False)
 
-    # HTML template with custom Dark Theme styling so it opens line-by-line automatically without clicking anything
+    # Box हटाइएको, सीधा पेजभरि लाइन-by-लाइन देखिने प्रिमियम स्टाइल
     html_content = f"""<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -97,61 +95,22 @@ async def get_combined_update():
             color: #E2E8F0;
             font-family: 'Fira Code', monospace;
             margin: 0;
-            padding: 20px;
+            padding: 25px;
         }}
-        .container {{
-            max-width: 900px;
-            margin: 0 auto;
-            background: #161B22;
-            border: 1px solid #30363D;
-            border-radius: 10px;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.5);
-            overflow: hidden;
-        }}
-        .header {{
-            background: #21262D;
-            padding: 12px 20px;
-            font-size: 14px;
-            font-weight: 500;
-            border-bottom: 1px solid #30363D;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }}
-        .dot-container {{
-            display: flex;
-            gap: 6px;
-        }}
-        .dot {{
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-        }}
-        .dot-red {{ background: #FF5F56; }}
-        .dot-yellow {{ background: #FFBD2E; }}
-        .dot-green {{ background: #27C93F; }}
         pre {{
             margin: 0;
-            padding: 20px;
+            padding: 0;
             white-space: pre-wrap;
             word-wrap: break-word;
-            font-size: 13px;
+            font-size: 14px;
             line-height: 1.6;
+            background: transparent;
+            border: none;
         }}
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <div class="dot-container">
-                <div class="dot dot-red"></div>
-                <div class="dot dot-yellow"></div>
-                <div class="dot dot-green"></div>
-            </div>
-            <span>CKRPRO_API_RESPONSE.json</span>
-        </div>
-        <pre>{pretty_json}</pre>
-    </div>
+    <pre>{pretty_json}</pre>
 </body>
 </html>"""
 
