@@ -32,13 +32,15 @@ async def get_api_update():
             data = response.json()
 
         return {
+            "status": "success",
+            "color": "green",
             "remote_version": data.get('remote_version'),
             "server_url": data.get('server_url'),
             "latest_release_version": data.get('latest_release_version'),
             "play_store_version": play_version
         }
     except Exception as e:
-        return {"error": str(e)}
+        return {"error": str(e), "color": "red"}
 
 async def get_scraping_update():
     try:
@@ -48,35 +50,36 @@ async def get_scraping_update():
         
         s = BeautifulSoup(r.content, 'html.parser')
         t = ' '.join(s.get_text().split())
-        p = r'The next Free Fire update happens on (.+?) \((GMT[^)]+)\), remaining (.+?)\.'
-        m = re.search(p, t, re.IGNORECASE)
         
-        v = re.findall(r'OB\d+', t)
-        uv = list(dict.fromkeys(v))
+        # नयाँ वेबसाइट ढाँचा अनुसार मिलाइएको Regex
+        p = r'Free Fire will update on (.+?), that is, (.+?) left until the next update, when the game will move from version (OB\d+) to the new version (OB\d+)\.'
+        m = re.search(p, t, re.IGNORECASE)
         
         if m:
             return {
-                "NextUpdate_Date": f"{m.group(1).strip()} ({m.group(2).strip()})",
-                "countdown": m.group(3).strip(),
-                "from_version": uv[0] if len(uv) > 0 else "N/A",
-                "to_version": uv[1] if len(uv) > 1 else "N/A"
+                "status": "success",
+                "color": "green",
+                "NextUpdate_Date": m.group(1).strip(),
+                "countdown": m.group(2).strip(),
+                "from_version": m.group(3).strip(),
+                "to_version": m.group(4).strip()
             }
-        return {"error": "Scraping pattern not found"}
+        return {"error": "Scraping pattern not found", "color": "red"}
     except Exception as e:
-        return {"error": str(e)}
+        return {"error": str(e), "color": "red"}
 
 @app.get("/")
 async def get_combined_update():
-    
     region_urls = load_client_urls()
 
     api_task, web_task = await asyncio.gather(get_api_update(), get_scraping_update())
 
     return {
-    "status": "success",
-    "SourceUpdate_info": api_task,
-    "GameUpdate_info": web_task,
-    "Region_URLs": region_urls,
-    "Credit": "Created by CKRPRO ON TOP",
-    "YouTube": "ckr unknown"
-}
+        "status": "success",
+        "color": "green",
+        "SourceUpdate_info": api_task,
+        "GameUpdate_info": web_task,
+        "Region_URLs": region_urls,
+        "Credit": "Created by CKRPRO ON TOP",
+        "YouTube": "ckr unknown"
+    }
