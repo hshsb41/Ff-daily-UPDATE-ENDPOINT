@@ -11,6 +11,7 @@ app = FastAPI()
 
 FF_MANIA_URL = "https://www.freefiremania.com.br/free-fire-new-update.html"
 
+# Advanced headers to bypass Cloudflare and 403 Forbidden errors
 HEADERS = {
     'User-Agent': 'Mozilla/5.0 (Linux; Android 14; SM-S918B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Mobile Safari/537.36',
     'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
@@ -94,29 +95,19 @@ async def get_combined_update():
     region_urls = load_client_urls()
     api_task, web_task = await asyncio.gather(get_api_update(), get_scraping_update())
 
-    # पूर्ण रूपमा नेपाली भाषाको डेटा संरचना
-    nepali_response_data = {
-        "स्थिति": "सफल",
-        "प्लेस्टोर_अपडेट_विवरण": api_task,
-        "खेल_अपडेट_विवरण": web_task,
-        "क्षेत्रीय_लिङ्कहरू": region_urls,
-        "सिर्जनाकर्ता": "Created by ckrpro",
-        "युट्युब": "ckr unknown"
-    }
-
-    # पूर्ण रूपमा अंग्रेजी भाषाको डेटा संरचना
-    english_response_data = {
+    response_data = {
         "status": "success",
         "SourceUpdate_info": api_task,
         "GameUpdate_info": web_task,
         "Region_URLs": region_urls,
-        "Credit": "Created by ckrpro",
-        "YouTube": "ckr unknown"
+        "Developer": "ckrpro",
+        "YouTube": "ckr unknown",
+        "TikTok": "ckrpro1"
     }
 
-    nepali_json = json.dumps(nepali_response_data, indent=4, ensure_ascii=False)
-    english_json = json.dumps(english_response_data, indent=4, ensure_ascii=False)
+    pretty_json = json.dumps(response_data, indent=4, ensure_ascii=False)
 
+    # HTML response styled entirely in Green color theme
     html_content = f"""<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -127,7 +118,7 @@ async def get_combined_update():
     <style>
         body {{
             background-color: #0F1117;
-            color: #E2E8F0;
+            color: #22C55E;
             font-family: 'Fira Code', monospace;
             margin: 0;
             padding: 25px;
@@ -141,16 +132,12 @@ async def get_combined_update():
             line-height: 1.6;
             background: transparent;
             border: none;
-        }}
-        .space-box {{
-            height: 150px; /* माथि र तलको JSON बीचमा राखिएको ठूलो खाली ठाउँ */
+            color: #22C55E;
         }}
     </style>
 </head>
 <body>
-    <pre>{nepali_json}</pre>
-    <div class="space-box"></div>
-    <pre>{english_json}</pre>
+    <pre>{pretty_json}</pre>
 </body>
 </html>"""
 
