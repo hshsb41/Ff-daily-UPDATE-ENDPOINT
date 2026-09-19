@@ -10,8 +10,6 @@ import os
 app = FastAPI()
 
 FF_MANIA_URL = "https://www.freefiremania.com.br/free-fire-new-update.html"
-
-# Cloudflare र 403 Forbidden बाट बच्नको लागि प्रिमियम मोबाइल ब्राउजर हेडरहरू
 HEADERS = {
     'User-Agent': 'Mozilla/5.0 (Linux; Android 14; SM-S918B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Mobile Safari/537.36',
     'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
@@ -19,18 +17,14 @@ HEADERS = {
     'Accept-Language': 'en-US,en;q=0.9',
     'Cache-Control': 'no-cache',
     'Connection': 'keep-alive',
-    'Sec-Fetch-Site': 'none',
-    'Sec-Fetch-Mode': 'navigate',
-    'Sec-Fetch-User': '?1',
-    'Sec-Fetch-Dest': 'document',
 }
 
 def load_client_urls():
     file_path = 'clients_url.json'
     if os.path.exists(file_path):
-        with open(file_path, 'r') as f:
+        with open(file_path, 'r', encoding='utf-8') as f:
             return json.load(f)
-    return {"error": "clients_url.json not found"}
+    return {"error": "clients_url.json file bhetena"}
 
 async def get_api_update():
     try:
@@ -56,7 +50,6 @@ async def get_api_update():
 
 async def get_scraping_update():
     try:
-        # follow_redirects=True राखेर Vercel बाट ब्लक हुनबाट जोगाइएको छ
         async with httpx.AsyncClient(timeout=15.0, headers=HEADERS, follow_redirects=True) as client:
             r = await client.get(FF_MANIA_URL)
             r.raise_for_status()
@@ -64,7 +57,6 @@ async def get_scraping_update():
         s = BeautifulSoup(r.content, 'html.parser')
         t = ' '.join(s.get_text().split())
         
-        # मुख्य Regex म्याच गर्ने प्रयास
         p = r'Free Fire will update on (.+?), that is, (.+?) left until the next update, when the game will move from version (OB\d+) to the new version (OB\d+)\.'
         m = re.search(p, t, re.IGNORECASE)
         
@@ -72,12 +64,11 @@ async def get_scraping_update():
             return {
                 "status": "success",
                 "NextUpdate_Date": m.group(1).strip(),
-                "countdown": m.group(2).strip(),
+                "countdown": m.group(2.strip() if hasattr(m.group(2), 'strip') else m.group(2)),
                 "from_version": m.group(3).strip(),
                 "to_version": m.group(4).strip()
             }
         
-        # यदि माथिको म्याच भएन भने अटो-डिटेक्ट ब्याकअप लजिक (OB version finder)
         all_versions = re.findall(r'OB\d{2}', t)
         unique_versions = list(dict.fromkeys(all_versions))
         sorted_versions = sorted(unique_versions, key=lambda x: int(x.replace('OB', '')))
@@ -89,12 +80,87 @@ async def get_scraping_update():
             "from_version": sorted_versions[0] if len(sorted_versions) > 0 else "OB55",
             "to_version": sorted_versions[1] if len(sorted_versions) > 1 else "OB56"
         }
-        
     except Exception as e:
         return {"error": str(e)}
 
+# Main Home page ma duitai option ko link dekhaune
 @app.get("/")
-async def get_combined_update():
+async def home():
+    html_content = """<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CKRPRO - Free Fire Update API</title>
+    <style>
+        body {
+            background-color: #0F1117;
+            color: #E2E8F0;
+            font-family: monospace;
+            text-align: center;
+            padding-top: 100px;
+        }
+        h1 { color: #38BDF8; }
+        .btn-container {
+            margin-top: 30px;
+        }
+        .btn {
+            background-color: #1E293B;
+            color: #38BDF8;
+            padding: 12px 25px;
+            margin: 10px;
+            border: 1px solid #334155;
+            border-radius: 8px;
+            text-decoration: none;
+            font-size: 16px;
+            display: inline-block;
+            transition: 0.3s;
+        }
+        .btn:hover {
+            background-color: #334155;
+            color: #FFFFFF;
+        }
+    </style>
+</head>
+<body>
+    <h1>CKRPRO API Hub</h1>
+    <p>Kripaya tala diyesetAlignment option madhye kunai ek chunuhola:</p>
+    <div class="btn-container">
+        <a href="/nepali" class="btn">१. नेपाली भाषामा हेर्नुहोस् (Nepali Version)</a><br>
+        <a href="/english" class="btn">२. View in English (English Version)</a>
+    </div>
+</body>
+</html>"""
+    return Response(content=html_content, media_type="text/html")
+
+# Nepali Option Endpoint
+@app.get("/nepali")
+async def get_nepali_update():
+    region_urls = load_client_urls()
+    api_task, web_task = await asyncio.gather(get_api_update(), get_scraping_update())
+
+    response_data = {
+        "सुचना_स्थिति": "सफल",
+        "SourceUpdate_info": api_task,
+        "GameUpdate_info": web_task,
+        "Region_URLs": region_urls,
+        "Credit": "Created by CKRPRO ON TOP",
+        "YouTube": "ckr unknown"
+    }
+    pretty_json = json.dumps(response_data, indent=4, ensure_ascii=False)
+    
+    html = f"""<!DOCTYPE html>
+<html lang="ne">
+<head><meta charset="UTF-8"><title>Nepali API</title>
+<link href="https://fonts.googleapis.com/css2?family=Fira+Code&display=swap" rel="stylesheet">
+<style>body {{ background: #0F1117; color: #22C55E; font-family: 'Fira Code', monospace; padding: 25px; }} pre {{ white-space: pre-wrap; }}</style>
+</head>
+<body><pre>{pretty_json}</pre></body></html>"""
+    return Response(content=html, media_type="text/html")
+
+# English Option Endpoint
+@app.get("/english")
+async def get_english_update():
     region_urls = load_client_urls()
     api_task, web_task = await asyncio.gather(get_api_update(), get_scraping_update())
 
@@ -106,40 +172,13 @@ async def get_combined_update():
         "Credit": "Created by CKRPRO ON TOP",
         "YouTube": "ckr unknown"
     }
-
     pretty_json = json.dumps(response_data, indent=4, ensure_ascii=False)
-
-    # कुनै बक्स नभएको, सीधा लाइन-by-लाइन देखिने सफा र प्रिमियम डार्क डिजाइन
-    html_content = f"""<!DOCTYPE html>
+    
+    html = f"""<!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CKRPRO - Free Fire Update API</title>
-    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
-    <style>
-        body {{
-            background-color: #0F1117;
-            color: #E2E8F0;
-            font-family: 'Fira Code', monospace;
-            margin: 0;
-            padding: 25px;
-        }}
-        pre {{
-            margin: 0;
-            padding: 0;
-            white-space: pre-wrap;
-            word-wrap: break-word;
-            font-size: 14px;
-            line-height: 1.6;
-            background: transparent;
-            border: none;
-        }}
-    </style>
+<head><meta charset="UTF-8"><title>English API</title>
+<link href="https://fonts.googleapis.com/css2?family=Fira+Code&display=swap" rel="stylesheet">
+<style>body {{ background: #0F1117; color: #38BDF8; font-family: 'Fira Code', monospace; padding: 25px; }} pre {{ white-space: pre-wrap; }}</style>
 </head>
-<body>
-    <pre>{pretty_json}</pre>
-</body>
-</html>"""
-
-    return Response(content=html_content, media_type="text/html")
+<body><pre>{pretty_json}</pre></body></html>"""
+    return Response(content=html, media_type="text/html")
