@@ -10,6 +10,7 @@ import os
 app = FastAPI()
 
 FF_MANIA_URL = "https://www.freefiremania.com.br/free-fire-new-update.html"
+
 HEADERS = {
     'User-Agent': 'Mozilla/5.0 (Linux; Android 14; SM-S918B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Mobile Safari/537.36',
     'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
@@ -17,6 +18,10 @@ HEADERS = {
     'Accept-Language': 'en-US,en;q=0.9',
     'Cache-Control': 'no-cache',
     'Connection': 'keep-alive',
+    'Sec-Fetch-Site': 'none',
+    'Sec-Fetch-Mode': 'navigate',
+    'Sec-Fetch-User': '?1',
+    'Sec-Fetch-Dest': 'document',
 }
 
 def load_client_urls():
@@ -24,7 +29,7 @@ def load_client_urls():
     if os.path.exists(file_path):
         with open(file_path, 'r', encoding='utf-8') as f:
             return json.load(f)
-    return {"error": "clients_url.json file bhetena"}
+    return {"error": "clients_url.json not found"}
 
 async def get_api_update():
     try:
@@ -80,36 +85,37 @@ async def get_scraping_update():
             "from_version": sorted_versions[0] if len(sorted_versions) > 0 else "OB55",
             "to_version": sorted_versions[1] if len(sorted_versions) > 1 else "OB56"
         }
+        
     except Exception as e:
         return {"error": str(e)}
 
 @app.get("/")
-async def combined_view():
+async def get_combined_update():
     region_urls = load_client_urls()
     api_task, web_task = await asyncio.gather(get_api_update(), get_scraping_update())
 
-    # नेपाली डाटा सेक्सन (Nepali Data)
-    nepali_data = {
-        "सुचना_स्थिति": "सफल",
-        "प्ले_स्टोर_अपडेट_विवरण": api_task,
+    # पूर्ण रूपमा नेपाली भाषाको डेटा संरचना
+    nepali_response_data = {
+        "स्थिति": "सफल",
+        "प्लेस्टोर_अपडेट_विवरण": api_task,
         "खेल_अपडेट_विवरण": web_task,
         "क्षेत्रीय_लिङ्कहरू": region_urls,
-        "सृष्टिकर्ता": "Created by CKRPRO ON TOP",
+        "सिर्जनाकर्ता": "Created by ckrpro",
         "युट्युब": "ckr unknown"
     }
 
-    # अंग्रेजी डाटा सेक्सन (English Data)
-    english_data = {
+    # पूर्ण रूपमा अंग्रेजी भाषाको डेटा संरचना
+    english_response_data = {
         "status": "success",
         "SourceUpdate_info": api_task,
         "GameUpdate_info": web_task,
         "Region_URLs": region_urls,
-        "Credit": "Created by CKRPRO ON TOP",
+        "Credit": "Created by ckrpro",
         "YouTube": "ckr unknown"
     }
 
-    nepali_json = json.dumps(nepali_data, indent=4, ensure_ascii=False)
-    english_json = json.dumps(english_data, indent=4, ensure_ascii=False)
+    nepali_json = json.dumps(nepali_response_data, indent=4, ensure_ascii=False)
+    english_json = json.dumps(english_response_data, indent=4, ensure_ascii=False)
 
     html_content = f"""<!DOCTYPE html>
 <html lang="en">
@@ -124,13 +130,7 @@ async def combined_view():
             color: #E2E8F0;
             font-family: 'Fira Code', monospace;
             margin: 0;
-            padding: 30px;
-        }}
-        h2 {{
-            color: #38BDF8;
-            border-bottom: 1px solid #334155;
-            padding-bottom: 10px;
-            margin-bottom: 15px;
+            padding: 25px;
         }}
         pre {{
             margin: 0;
@@ -142,25 +142,15 @@ async def combined_view():
             background: transparent;
             border: none;
         }}
-        .section-nepali {{
-            margin-bottom: 200px; /* नेपाली र अंग्रेजी बीचमा धेरै खाली ठाउँ */
+        .space-box {{
+            height: 150px; /* माथि र तलको JSON बीचमा राखिएको ठूलो खाली ठाउँ */
         }}
     </style>
 </head>
 <body>
-
-    <!-- 🇳🇵 First Section: Nepali Version -->
-    <div class="section-nepali">
-        <h2>🇳🇵 नेपाली संस्करण (Nepali Version)</h2>
-        <pre>{nepali_json}</pre>
-    </div>
-
-    <!-- 🇬🇧 Second Section: English Version with large gap -->
-    <div class="section-english">
-        <h2>🇬🇧 English Version</h2>
-        <pre>{english_json}</pre>
-    </div>
-
+    <pre>{nepali_json}</pre>
+    <div class="space-box"></div>
+    <pre>{english_json}</pre>
 </body>
 </html>"""
 
