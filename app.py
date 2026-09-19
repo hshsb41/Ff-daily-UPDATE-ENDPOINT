@@ -64,7 +64,7 @@ async def get_scraping_update():
             return {
                 "status": "success",
                 "NextUpdate_Date": m.group(1).strip(),
-                "countdown": m.group(2.strip() if hasattr(m.group(2), 'strip') else m.group(2)),
+                "countdown": m.group(2).strip(),
                 "from_version": m.group(3).strip(),
                 "to_version": m.group(4).strip()
             }
@@ -83,88 +83,23 @@ async def get_scraping_update():
     except Exception as e:
         return {"error": str(e)}
 
-# Main Home page ma duitai option ko link dekhaune
 @app.get("/")
-async def home():
-    html_content = """<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CKRPRO - Free Fire Update API</title>
-    <style>
-        body {
-            background-color: #0F1117;
-            color: #E2E8F0;
-            font-family: monospace;
-            text-align: center;
-            padding-top: 100px;
-        }
-        h1 { color: #38BDF8; }
-        .btn-container {
-            margin-top: 30px;
-        }
-        .btn {
-            background-color: #1E293B;
-            color: #38BDF8;
-            padding: 12px 25px;
-            margin: 10px;
-            border: 1px solid #334155;
-            border-radius: 8px;
-            text-decoration: none;
-            font-size: 16px;
-            display: inline-block;
-            transition: 0.3s;
-        }
-        .btn:hover {
-            background-color: #334155;
-            color: #FFFFFF;
-        }
-    </style>
-</head>
-<body>
-    <h1>CKRPRO API Hub</h1>
-    <p>Kripaya tala diyesetAlignment option madhye kunai ek chunuhola:</p>
-    <div class="btn-container">
-        <a href="/nepali" class="btn">१. नेपाली भाषामा हेर्नुहोस् (Nepali Version)</a><br>
-        <a href="/english" class="btn">२. View in English (English Version)</a>
-    </div>
-</body>
-</html>"""
-    return Response(content=html_content, media_type="text/html")
-
-# Nepali Option Endpoint
-@app.get("/nepali")
-async def get_nepali_update():
+async def combined_view():
     region_urls = load_client_urls()
     api_task, web_task = await asyncio.gather(get_api_update(), get_scraping_update())
 
-    response_data = {
+    # नेपाली डाटा सेक्सन (Nepali Data)
+    nepali_data = {
         "सुचना_स्थिति": "सफल",
-        "SourceUpdate_info": api_task,
-        "GameUpdate_info": web_task,
-        "Region_URLs": region_urls,
-        "Credit": "Created by CKRPRO ON TOP",
-        "YouTube": "ckr unknown"
+        "प्ले_स्टोर_अपडेट_विवरण": api_task,
+        "खेल_अपडेट_विवरण": web_task,
+        "क्षेत्रीय_लिङ्कहरू": region_urls,
+        "सृष्टिकर्ता": "Created by CKRPRO ON TOP",
+        "युट्युब": "ckr unknown"
     }
-    pretty_json = json.dumps(response_data, indent=4, ensure_ascii=False)
-    
-    html = f"""<!DOCTYPE html>
-<html lang="ne">
-<head><meta charset="UTF-8"><title>Nepali API</title>
-<link href="https://fonts.googleapis.com/css2?family=Fira+Code&display=swap" rel="stylesheet">
-<style>body {{ background: #0F1117; color: #22C55E; font-family: 'Fira Code', monospace; padding: 25px; }} pre {{ white-space: pre-wrap; }}</style>
-</head>
-<body><pre>{pretty_json}</pre></body></html>"""
-    return Response(content=html, media_type="text/html")
 
-# English Option Endpoint
-@app.get("/english")
-async def get_english_update():
-    region_urls = load_client_urls()
-    api_task, web_task = await asyncio.gather(get_api_update(), get_scraping_update())
-
-    response_data = {
+    # अंग्रेजी डाटा सेक्सन (English Data)
+    english_data = {
         "status": "success",
         "SourceUpdate_info": api_task,
         "GameUpdate_info": web_task,
@@ -172,13 +107,61 @@ async def get_english_update():
         "Credit": "Created by CKRPRO ON TOP",
         "YouTube": "ckr unknown"
     }
-    pretty_json = json.dumps(response_data, indent=4, ensure_ascii=False)
-    
-    html = f"""<!DOCTYPE html>
+
+    nepali_json = json.dumps(nepali_data, indent=4, ensure_ascii=False)
+    english_json = json.dumps(english_data, indent=4, ensure_ascii=False)
+
+    html_content = f"""<!DOCTYPE html>
 <html lang="en">
-<head><meta charset="UTF-8"><title>English API</title>
-<link href="https://fonts.googleapis.com/css2?family=Fira+Code&display=swap" rel="stylesheet">
-<style>body {{ background: #0F1117; color: #38BDF8; font-family: 'Fira Code', monospace; padding: 25px; }} pre {{ white-space: pre-wrap; }}</style>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CKRPRO - Free Fire Update API</title>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        body {{
+            background-color: #0F1117;
+            color: #E2E8F0;
+            font-family: 'Fira Code', monospace;
+            margin: 0;
+            padding: 30px;
+        }}
+        h2 {{
+            color: #38BDF8;
+            border-bottom: 1px solid #334155;
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+        }}
+        pre {{
+            margin: 0;
+            padding: 0;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            font-size: 14px;
+            line-height: 1.6;
+            background: transparent;
+            border: none;
+        }}
+        .section-nepali {{
+            margin-bottom: 200px; /* नेपाली र अंग्रेजी बीचमा धेरै खाली ठाउँ */
+        }}
+    </style>
 </head>
-<body><pre>{pretty_json}</pre></body></html>"""
-    return Response(content=html, media_type="text/html")
+<body>
+
+    <!-- 🇳🇵 First Section: Nepali Version -->
+    <div class="section-nepali">
+        <h2>🇳🇵 नेपाली संस्करण (Nepali Version)</h2>
+        <pre>{nepali_json}</pre>
+    </div>
+
+    <!-- 🇬🇧 Second Section: English Version with large gap -->
+    <div class="section-english">
+        <h2>🇬🇧 English Version</h2>
+        <pre>{english_json}</pre>
+    </div>
+
+</body>
+</html>"""
+
+    return Response(content=html_content, media_type="text/html")
